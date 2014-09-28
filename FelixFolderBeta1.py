@@ -100,12 +100,16 @@ def colorText(color, text):
 
 def Gitcommit(git_directory=None, repository=None, files=None):
     if os.path.isfile(git_directory):
-        print "git found on computers program directory"
         execGitCommand(r"%s init" %git_directory, True)
-        for m in files:
-            file_location="%s/%s" %(repository, m)
-            execGitCommand("%s add '%s'.do'" %(git_directory, file_location), True)  
-            print "file added to git"
+        print "git found on computers program directory"
+        #for m in files:
+        #    file_location="%s/%s" %(repository, m)
+        #    execGitCommand("%s add '%s'.do'" %(git_directory, file_location), True)  
+        #    print "file added to git"
+        append = """\n\n shell cd "$do_path" \n shell %s add -A \n shell %s commit -m 'version $datum'""" %(git_directory, git_directory)
+        os.chdir(repository)
+        open("0-master.do" , "a").write(append) 
+        #f.close()
         InitializeGit(git_directory) 
         return git_directory 
     else:
@@ -186,9 +190,9 @@ if os.path.exists(directory):
         for m in files:
             f=open("%s.do" %m, "w+")
             if m=="0-master":
-                    basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Master File     ********************\n*********************************************************\n\n**********************************\n**Change paths********************\n**********************************/\n\nglobal root "%s" \nglobal do_path "$root/code"\nglobal input_data_path "$root/input"\nglobal output_path "$root/output"\nglobal log_path "$root/log"\nglobal datum = subinstr(c(current_date)," ","",.)\n\n**********************************\n**Run Do-Files********************\n**********************************\n\n\ncd "$log_path"\ncap log close\nlog using preparation${datum}, replace\n\ncd "$do_path"\ndo 1-preparation\ncap log close\n\ncd "$log_path"\ncap log close\nlog using regressions${datum}, replace\n\ncd "$do_path"\ndo 2-regressions\ncap log close \n\nexit, STATA clear \n \n """ %(name, temp_dir)
+                    basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Master File     ********************\n*********************************************************\n\n**********************************\n**Change paths********************\n**********************************/\n\nglobal root "%s" \nglobal do_path "$root/code"\nglobal input_data_path "$root/input"\nglobal output_path "$root/output"\nglobal log_path "$root/log"\nglobal datum = subinstr(c(current_date)," ","",.)\n\n**********************************\n**Run Do-Files********************\n**********************************\n\n\ncd "$log_path"\ncap log close\nlog using preparation${datum}, replace\n\ncd "$do_path"\ndo 1-preparation\ncap log close\n\ncd "$log_path"\ncap log close\nlog using regressions${datum}, replace\n\ncd "$do_path"\ndo 2-regressions\ncap log close """ %(name, temp_dir)
                     f.write(basics)
-                    f.close()
+            f.close()
             print "created file  %s.do" %m
 #start the git set up process    
     for j in mains:  
