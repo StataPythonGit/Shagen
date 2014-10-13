@@ -223,7 +223,7 @@ if os.path.exists(directory):
 			
             if GitFound==False:
 				print "searching git"
-				git_lcoation=execGitCommand(r"which git")                
+				git_location=execGitCommand(r"which git")                
 				print git_location
 				GitFound=Gitcommit(git_location, repository, files)
             if GitFound==False:
