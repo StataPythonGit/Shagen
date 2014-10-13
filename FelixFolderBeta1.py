@@ -205,27 +205,32 @@ if os.path.exists(directory):
             git_init=execGitCommand(r"git init")                
             print git_init
             if os.path.isfile(git_location):
-                GitFound=Gitcommit(git_location, repository, files)
-#==============================================================================
-#             if GitFound==False:
-#                 git_location=which("git") 
-#                 print git_location
-#                 os.chdir(repository)
-#                 GitFound=Gitcommit(git_location, repository, files)                    
-#==============================================================================
+				GitFound=Gitcommit(git_location, repository, files)
+
+            if GitFound==False & sys.platform =='darwin':
+				print "running mac OS"
+				git_location=which("git") 
+				print git_location
+				os.chdir(repository)
+				GitFound=Gitcommit(git_location, repository, files)   
+				
+            if GitFound==False & sys.platform =='win32':
+				print "running mac OS"
+				git_location=check_output("where git/bin/git", shell=True)
+				print git_location
+				os.chdir(repository)
+				GitFound=Gitcommit(git_location, repository, files)     				
+			
             if GitFound==False:
-                print "searching git"
-                git_lcoation=execGitCommand(r"which git")                
-                print git_location
-                GitFound=Gitcommit(git_location, repository, files)
+				print "searching git"
+				git_lcoation=execGitCommand(r"which git")                
+				print git_location
+				GitFound=Gitcommit(git_location, repository, files)
             if GitFound==False:
-                    #try to search the standard install directory on a MAC
-                    GitFound=Gitcommit("/usr/local/git/bin/git", repository, files) 
-                    git_location="/usr/local/git/bin/git"
-            if GitFound==False:
-                    #search the standard install directory on Windows
-                    GitFound=Gitcommit("C:\users\USERNAME\programs\git\bin\git", repository, files)
-                    git_location="C:\users\USERNAME\programs\git\bin\git"
+                #try to search the standard install directory on a MAC
+                GitFound=Gitcommit("/usr/local/git/bin/git", repository, files) 
+                git_location="/usr/local/git/bin/git"
+
             if GitFound==False:
                 git_location="False"
                 while os.path.isfile(git_location)==False:
