@@ -8,7 +8,6 @@ Created on 24.05.2014
 import os
 import re
 import sys
-
 import subprocess
 
 	
@@ -102,10 +101,10 @@ def Gitcommit(git_directory=None, repository=None, files=None):
     if os.path.isfile(git_directory):
         execGitCommand(r"%s init" %git_directory, True)
         print "git found on computers program directory"
-        #for m in files:
-        #    file_location="%s/%s" %(repository, m)
-        #    execGitCommand("%s add '%s'.do'" %(git_directory, file_location), True)  
-        #    print "file added to git"
+        for m in files:
+            file_location="%s/%s" %(repository, m)
+            execGitCommand("%s add '%s'.do'" %(git_directory, file_location), True)  
+            print "file added to git"
         append = """\n\n shell cd "$do_path" \n shell %s add -A \n shell %s commit -m 'version $datum'""" %(git_directory, git_directory)
         os.chdir(repository)
         open("0-master.do" , "a").write(append) 
@@ -205,44 +204,49 @@ if os.path.exists(directory):
             git_init=execGitCommand(r"git init")                
             print git_init
             if os.path.isfile(git_location):
-				GitFound=Gitcommit(git_location, repository, files)
+                GitFound=Gitcommit(git_location, repository, files)
 
-            if GitFound==False & sys.platform =='darwin':
-				print "running mac OS"
-				git_location=which("git") 
-				print git_location
-				os.chdir(repository)
-				GitFound=Gitcommit(git_location, repository, files)   
+            if GitFound==False and sys.platform =='darwin':
+                print "running mac OS"
+                git_location=which("git") 
+                print git_location
+                os.chdir(repository)
+                GitFound=Gitcommit(git_location, repository, files)   
 				
-            if GitFound==False & sys.platform =='win32':
-				print "running mac OS"
-				git_location=check_output("where git/bin/git", shell=True)
-				print git_location
-				os.chdir(repository)
-				GitFound=Gitcommit(git_location, repository, files)     				
+            if GitFound==False and sys.platform =='win32':
+                print "running Windows"
+                git_location=subprocess.check_output("where git")
+                git_location_templist = git_location.split("Git")
+                git_location = git_location_templist[0]+r'Git\bin\git.exe'
+                print git_location
+                os.chdir(repository)
+                GitFound=Gitcommit(git_location, repository, files)     				
 			
-            if GitFound==False:
-				print "searching git"
-				git_location=execGitCommand(r"which git")                
-				print git_location
-				GitFound=Gitcommit(git_location, repository, files)
-            if GitFound==False:
-                #try to search the standard install directory on a MAC
-                GitFound=Gitcommit("/usr/local/git/bin/git", repository, files) 
-                git_location="/usr/local/git/bin/git"
-
-            if GitFound==False:
-                git_location="False"
-                while os.path.isfile(git_location)==False:
-                    print "location of git not found"
-                    git_location = raw_input(r"where did you install git (pls enter the full directory of git.exe e.g. C:\appdata\local\programs\git\bin\git ) or q to skip git set up?:")
-                    print git_location  
-                    git_location = git_location + "\git.exe"
-                    git_location = stripcolon(git_location)
-                    print git_location                    
-                    if  git_location=='"q"':
-                        sys.exit("git not set up, but folders created")
-                    GitFound=Gitcommit(git_location, repository, files)
+            if GitFound==False and sys.platform =='darwin':
+			print "searching git"
+			git_location=execGitCommand(r"which git")                
+			print git_location
+			GitFound=Gitcommit(git_location, repository, files)
+    
+#==============================================================================
+#             if GitFound==False and sys.platform =='darwin':
+#                 #try to search the standard install directory on a MAC
+#                 GitFound=Gitcommit("/usr/local/git/bin/git", repository, files) 
+#                 git_location="/usr/local/git/bin/git"
+# 
+#             if GitFound==False:
+#                 git_location="False"
+#                 while os.path.isfile(git_location)==False:
+#                     print "location of git not found"
+#                     git_location = raw_input(r"where did you install git (pls enter the full directory of git.exe e.g. C:\appdata\local\programs\git\bin\git ) or q to skip git set up?:")
+#                     print git_location  
+#                     git_location = git_location + "\git.exe"
+#                     git_location = stripcolon(git_location)
+#                     print git_location                    
+#                     if  git_location=='"q"':
+#                         sys.exit("git not set up, but folders created")
+#                     GitFound=Gitcommit(git_location, repository, files)
+#==============================================================================
             if GitFound==True:
                 print "Git found"
         else:
