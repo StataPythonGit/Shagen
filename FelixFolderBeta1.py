@@ -57,7 +57,7 @@ def InitializeGit(git_directory=None):
         print "can't find git"        
     else:
         execGitCommand("%s add -A" %git_directory, True)
-        execGitCommand("%s commit -m 'first commit'" %git_directory, True)
+        execGitCommand('%s commit -m "first commit"' %git_directory, True)
         print "you are all set up on git"
 
         #git_choice = raw_input("Do you want to use GitHub (y/n):")
@@ -101,11 +101,11 @@ def Gitcommit(git_directory=None, repository=None, files=None):
     if os.path.isfile(git_directory):
         execGitCommand(r"%s init" %git_directory, True)
         print "git found on computers program directory"
-        for m in files:
-            file_location="%s/%s" %(repository, m)
-            execGitCommand("%s add '%s'.do'" %(git_directory, file_location), True)  
-            print "file added to git"
-        append = """\n\n shell cd "$do_path" \n shell %s add -A \n shell %s commit -m 'version $datum'""" %(git_directory, git_directory)
+        #for m in files:
+        #    file_location="%s/%s" %(repository, m)
+        #    execGitCommand("%s add '%s'.do'" %(git_directory, file_location), True)  
+            #print "file added to git"
+        append = """\n\n shell cd "$do_path" \n shell \"%s\" add -A \n shell \"%s\" commit -m \"version $datum\"""" %(git_directory, git_directory)
         os.chdir(repository)
         open("0-master.do" , "a").write(append) 
         #f.close()
@@ -129,8 +129,7 @@ def execGitCommand(command=None, verbose=False):
     if command:
         # converts multiple spaces to single space
         command = re.sub(' +',' ',command)
-        pr = subprocess.Popen(command, shell=True,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        pr = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         msg = pr.stdout.read()
         err = pr.stderr.read()
         if err:
@@ -139,8 +138,6 @@ def execGitCommand(command=None, verbose=False):
             print "Executing '%s'\n %s" % (command, colorText('red', 'Result:\n%s' % msg))
         return msg, err
     
-
-
 
 
 
@@ -189,7 +186,7 @@ if os.path.exists(directory):
         for m in files:
             f=open("%s.do" %m, "w+")
             if m=="0-master":
-                    basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Master File     ********************\n*********************************************************\n\n**********************************\n**Change paths********************\n**********************************/\n\nglobal root "%s" \nglobal do_path "$root/code"\nglobal input_data_path "$root/input"\nglobal output_path "$root/output"\nglobal log_path "$root/log"\nglobal datum = subinstr(c(current_date)," ","",.)\n\n**********************************\n**Run Do-Files********************\n**********************************\n\n\ncd "$log_path"\ncap log close\nlog using preparation${datum}, replace\n\ncd "$do_path"\ndo 1-preparation\ncap log close\n\ncd "$log_path"\ncap log close\nlog using regressions${datum}, replace\n\ncd "$do_path"\ndo 2-regressions\ncap log close """ %(name, temp_dir)
+                    basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Master File     ********************\n*********************************************************\n\n**********************************\n**Change paths********************\n**********************************/\n\nglobal root "%s" \nglobal do_path "$root/code"\nglobal input_path "$root/input"\nglobal temp_path "$root/temp"\nglobal output_path "$root/output"\nglobal log_path "$root/log"\nglobal datum = subinstr(c(current_date)," ","",.)\n\n**********************************\n**Run Do-Files********************\n**********************************\n\n\ncd "$log_path"\ncap log close\nlog using preparation${datum}, replace\n\ncd "$do_path"\ndo 1-preparation\ncap log close\n\ncd "$log_path"\ncap log close\nlog using regressions${datum}, replace\n\ncd "$do_path"\ndo 2-regressions\ncap log close """ %(name, temp_dir)
                     f.write(basics)
             f.close()
             print "created file  %s.do" %m
@@ -228,25 +225,23 @@ if os.path.exists(directory):
 			print git_location
 			GitFound=Gitcommit(git_location, repository, files)
     
-#==============================================================================
-#             if GitFound==False and sys.platform =='darwin':
-#                 #try to search the standard install directory on a MAC
-#                 GitFound=Gitcommit("/usr/local/git/bin/git", repository, files) 
-#                 git_location="/usr/local/git/bin/git"
-# 
-#             if GitFound==False:
-#                 git_location="False"
-#                 while os.path.isfile(git_location)==False:
-#                     print "location of git not found"
-#                     git_location = raw_input(r"where did you install git (pls enter the full directory of git.exe e.g. C:\appdata\local\programs\git\bin\git ) or q to skip git set up?:")
-#                     print git_location  
-#                     git_location = git_location + "\git.exe"
-#                     git_location = stripcolon(git_location)
-#                     print git_location                    
-#                     if  git_location=='"q"':
-#                         sys.exit("git not set up, but folders created")
-#                     GitFound=Gitcommit(git_location, repository, files)
-#==============================================================================
+            if GitFound==False and sys.platform =='darwin':
+                #try to search the standard install directory on a MAC
+                GitFound=Gitcommit("/usr/local/git/bin/git", repository, files) 
+                git_location="/usr/local/git/bin/git"
+
+            if GitFound==False:
+                git_location="False"
+                while os.path.isfile(git_location)==False:
+                    print "location of git not found"
+                    git_location = raw_input(r"where did you install git (pls enter the full directory of git.exe e.g. C:\appdata\local\programs\git\bin\git ) or q to skip git set up?:")
+                    print git_location  
+                    git_location = git_location + "\git.exe"
+                    git_location = stripcolon(git_location)
+                    print git_location                    
+                    if  git_location=='"q"':
+                        sys.exit("git not set up, but folders created")
+                    GitFound=Gitcommit(git_location, repository, files)
             if GitFound==True:
                 print "Git found"
         else:
