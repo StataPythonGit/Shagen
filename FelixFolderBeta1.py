@@ -180,7 +180,6 @@ if os.path.exists(directory):
         for s in folder:
             os.mkdir(s)
             print "created folder in %s" %temp_dir
-
         files=['0-master','1-preparation','2-regressions']   
         os.chdir(temp_dir + '/' + 'code')
         for m in files:
@@ -208,6 +207,18 @@ if os.path.exists(directory):
                 git_location=which("git") 
                 print git_location
                 os.chdir(repository)
+                if type(git_location)==str:
+                    GitFound=Gitcommit(git_location, repository, files)
+                elif type(git_location)==list:
+                    for i in git_location:
+                        if 'git/bin/git' in i:
+                            GitFound=Gitcommit(git_location, repository, files)
+                        else:
+                            print ""                
+                else:
+                    print "Your file structure is weird."
+                    print "Variable type that was returned from 'which'"
+                    print type(git_location)
                 GitFound=Gitcommit(git_location, repository, files)   
 				
             if GitFound==False and sys.platform =='win32':
