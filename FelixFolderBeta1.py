@@ -10,42 +10,42 @@ import re
 import sys
 import subprocess
 
-	
+    
 def which(name, flags=os.X_OK):
-	    """Search PATH for executable files with the given name.
-12	   
-13	    On newer versions of MS-Windows, the PATHEXT environment variable will be
-14	    set to the list of file extensions for files considered executable. This
-15	    will normally include things like ".EXE". This fuction will also find files
-16	    with the given name ending with any of these extensions.
-17	
-18	    On MS-Windows the only flag that has any meaning is os.F_OK. Any other
-19	    flags will be ignored.
-20	   
-21	    @type name: C{str}
-22	    @param name: The name for which to search.
-23	   
-24	    @type flags: C{int}
-25	    @param flags: Arguments to L{os.access}.
-26	   
-27	    @rtype: C{list}
-28	    @param: A list of the full paths to files found, in the
-29	    order in which they were found.
-30	    """
-	    result = []
-	    exts = filter(None, os.environ.get('PATHEXT', '').split(os.pathsep))
-	    path = os.environ.get('PATH', None)
-	    if path is None:
-	        return []
-	    for p in os.environ.get('PATH', '').split(os.pathsep):
-	        p = os.path.join(p, name)
-	        if os.access(p, flags):
-	            result.append(p)
-	        for e in exts:
-	            pext = p + e
-	            if os.access(pext, flags):
-	                result.append(pext)
-	    return result
+        """Search PATH for executable files with the given name.
+12       
+13        On newer versions of MS-Windows, the PATHEXT environment variable will be
+14        set to the list of file extensions for files considered executable. This
+15        will normally include things like ".EXE". This fuction will also find files
+16        with the given name ending with any of these extensions.
+17    
+18        On MS-Windows the only flag that has any meaning is os.F_OK. Any other
+19        flags will be ignored.
+20       
+21        @type name: C{str}
+22        @param name: The name for which to search.
+23       
+24        @type flags: C{int}
+25        @param flags: Arguments to L{os.access}.
+26       
+27        @rtype: C{list}
+28        @param: A list of the full paths to files found, in the
+29        order in which they were found.
+30        """
+        result = []
+        exts = filter(None, os.environ.get('PATHEXT', '').split(os.pathsep))
+        path = os.environ.get('PATH', None)
+        if path is None:
+            return []
+        for p in os.environ.get('PATH', '').split(os.pathsep):
+            p = os.path.join(p, name)
+            if os.access(p, flags):
+                result.append(p)
+            for e in exts:
+                pext = p + e
+                if os.access(pext, flags):
+                    result.append(pext)
+        return result
 
 def find(name, path):
     for root, dirs, files in os.walk(path):
@@ -129,7 +129,7 @@ def execGitCommand(command=None, verbose=False):
     if command:
         # converts multiple spaces to single space
         command = re.sub(' +',' ',command)
-        pr = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        pr = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         msg = pr.stdout.read()
         err = pr.stderr.read()
         if err:
@@ -212,6 +212,7 @@ if os.path.exists(directory):
                 elif type(git_location)==list:
                     for i in git_location:
                         if 'git/bin/git' in i:
+                            git_location=i
                             GitFound=Gitcommit(git_location, repository, files)
                         else:
                             print ""                
@@ -219,8 +220,7 @@ if os.path.exists(directory):
                     print "Your file structure is weird."
                     print "Variable type that was returned from 'which'"
                     print type(git_location)
-                GitFound=Gitcommit(git_location, repository, files)   
-				
+                
             if GitFound==False and sys.platform =='win32':
                 print "running Windows"
                 git_location=subprocess.check_output("where git")
@@ -228,13 +228,24 @@ if os.path.exists(directory):
                 git_location = git_location_templist[0]+r'Git\bin\git.exe'
                 print git_location
                 os.chdir(repository)
-                GitFound=Gitcommit(git_location, repository, files)     				
-			
+                GitFound=Gitcommit(git_location, repository, files)                     
+            
             if GitFound==False and sys.platform =='darwin':
-			print "searching git"
-			git_location=execGitCommand(r"which git")                
-			print git_location
-			GitFound=Gitcommit(git_location, repository, files)
+                print "searching git"
+                git_location=execGitCommand(r"which git")                
+                if type(git_location)==str:
+                        GitFound=Gitcommit(git_location, repository, files)
+                elif type(git_location)==list:
+                    for i in git_location:
+                        if 'git/bin/git' in i:
+                            git_location=i
+                            GitFound=Gitcommit(git_location, repository, files)
+                        else:
+                            print ""                
+                else:
+                    print "Your file structure is weird."
+                    print "Variable type that was returned from 'which'"
+                    print type(git_location)
     
             if GitFound==False and sys.platform =='darwin':
                 #try to search the standard install directory on a MAC
