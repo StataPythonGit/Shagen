@@ -143,7 +143,7 @@ def execGitCommand(command=None, verbose=False):
 
 
 # Ask the user for name
-name = raw_input("Enter a project name:")
+name = raw_input("Enter a project name:\n")
 while name=="":
     name = raw_input("The name has to be non empty - duh, or q for quit:")
     if name=="q":
@@ -153,7 +153,7 @@ GitFound=False
 
 #ask user for directory to set up folders
 while os.path.exists(directory)==False:
-    directory = raw_input('Enter the directory where folders should be set up (e.g. /Users/USERNAME/Documents) or q for quit: ')    
+    directory = raw_input('Enter the directory where folders should be set up (the path to the folder where you keep your research projects e.g. /Users/USERNAME/Documents) or q for quit: \n')    
     if directory=="q":
         sys.exit("set up aborted")
     directory=stripcolon(directory)
@@ -189,6 +189,7 @@ if os.path.exists(directory):
                     f.write(basics)
             f.close()
             print "created file  %s.do" %m
+
 #start the git set up process    
     for j in mains:  
         print "setting up git"
@@ -217,8 +218,8 @@ if os.path.exists(directory):
                         else:
                             print ""                
                 else:
-                    print "Your file structure is weird."
-                    print "Variable type that was returned from 'which'"
+                    print "We just can't fing GIT anywhere..."
+                    print "Variable type that was returned by our search"
                     print type(git_location)
                 
             if GitFound==False and sys.platform =='win32':
@@ -243,8 +244,8 @@ if os.path.exists(directory):
                         else:
                             print ""                
                 else:
-                    print "Your file structure is weird."
-                    print "Variable type that was returned from 'which'"
+                    print "We just can't fing GIT anywhere..."
+                    print "Variable type that was returned by our search"
                     print type(git_location)
     
             if GitFound==False and sys.platform =='darwin':
@@ -255,15 +256,29 @@ if os.path.exists(directory):
             if GitFound==False:
                 git_location="False"
                 while os.path.isfile(git_location)==False:
-                    print "location of git not found"
-                    git_location = raw_input(r"where did you install git (pls enter the full directory of git.exe e.g. C:\appdata\local\programs\git\bin\git ) or q to skip git set up?:")
-                    print git_location  
-                    git_location = git_location + "\git.exe"
-                    git_location = stripcolon(git_location)
-                    print git_location                    
-                    if  git_location=='"q"':
-                        sys.exit("git not set up, but folders created")
-                    GitFound=Gitcommit(git_location, repository, files)
+                    print "\n We couldn't find GIT on your computer. \n\n If you haven't installed GIT:\n Read ch.3 of Gentzkow & Shapiro on version controll. Git will help you keep track of changes you made in your do files: It also allows you to go back to earlier versions of your work\n Best to follow the masters and go to www.git-scm.com/downloads and install GIT, its FREE \n"
+                    if sys.platform =='darwin':
+                        git_location = raw_input('If you already installed GIT: \n Can you tell us the directory of GIT (HINT: it will be in a folder called "bin" e.g. sth like usr/local/git/bin/git ) \n To skip setting up GIT press q:\n')
+                        git_location = stripcolon(git_location)                        
+                        if  git_location=='q':
+                            sys.exit("All folders created, but GIT not set up")                        
+                        print git_location  
+                        git_location_templist = git_location.split("/")
+                        if git_location_templist[len(git_location_templist)-1]!="git":
+                            git_location = git_location + "/git"
+                        print git_location                    
+
+                        GitFound=Gitcommit(git_location, repository, files)
+                    if sys.platform =='win32':
+                        git_location = raw_input(r"If you already installed GIT: Can you tell us the directory of GIT (pls enter the full directory of git.exe e.g. C:\appdata\local\programs\git\bin\git ) \n or enter q to skip setting up GIT?:\n")
+                        git_location = stripcolon(git_location)                        
+                        if  git_location=='q':
+                            sys.exit("All folders created, but GIT not set up")                        
+                        print git_location  
+                        git_location = git_location + "\git.exe"
+                        print git_location                    
+
+                        GitFound=Gitcommit(git_location, repository, files)
             if GitFound==True:
                 print "Git found"
         else:
