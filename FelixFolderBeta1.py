@@ -129,7 +129,7 @@ def execGitCommand(command=None, verbose=False):
     if command:
         # converts multiple spaces to single space
         command = re.sub(' +',' ',command)
-        pr = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        pr = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         msg = pr.stdout.read()
         err = pr.stderr.read()
         if err:
@@ -225,11 +225,26 @@ if os.path.exists(directory):
             if GitFound==False and sys.platform =='win32':
                 print "running Windows"
                 git_location=subprocess.check_output("where git")
-                git_location_templist = git_location.split("Git")
-                git_location = git_location_templist[0]+r'Git\bin\git.exe'
-                print git_location
-                os.chdir(repository)
-                GitFound=Gitcommit(git_location, repository, files)                     
+                if type(git_location)==str:                
+                    git_location_templist = git_location.split("Git")
+                    git_location = git_location_templist[0]+r'Git\bin\git.exe'
+                    print git_location
+                    os.chdir(repository)
+                    GitFound=Gitcommit(git_location, repository, files)
+                if type(git_location)==list:
+                    for i in git_location:
+                        try:
+                            git_location_templist = git_location.split("Git")
+                            git_location = git_location_templist[0]+r'Git\bin\git.exe'
+                            print git_location
+                            os.chdir(repository)
+                            GitFound=Gitcommit(git_location, repository, files)                            
+                        except:
+                            print i                  
+                if type(git_location)!=list and type(git_location)!=str:
+                    print "What kind of weird file structure is that? I found this directory:"
+                    print git_location                
+                
             
             if GitFound==False and sys.platform =='darwin':
                 print "searching git"
