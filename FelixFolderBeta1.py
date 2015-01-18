@@ -216,8 +216,12 @@ if os.path.exists(directory):
 
             if GitFound==False and sys.platform =='darwin':
                 print "running mac OS"
-                git_location=which("git") 
-                print git_location
+                git_location=which("git")
+                try:
+                    git_location=git_location[0]
+                    print git_location
+                except IOError:
+                    print 'cannot find git'
                 os.chdir(repository)
                 if type(git_location)==str:
                     GitFound=Gitcommit(git_location, repository, files)
@@ -259,7 +263,8 @@ if os.path.exists(directory):
             
             if GitFound==False and sys.platform =='darwin':
                 print "searching git"
-                git_location=execGitCommand(r"which git")                
+                git_location=execGitCommand(r"which git")
+                                    
                 if type(git_location)==str:
                         GitFound=Gitcommit(git_location, repository, files)
                 elif type(git_location)==list:
