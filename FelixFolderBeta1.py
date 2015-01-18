@@ -131,7 +131,10 @@ def execGitCommand(command=None, verbose=False):
     if command:
         # converts multiple spaces to single space
         command = re.sub(' +',' ',command)
-        pr = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if sys.platform =='darwin':
+            pr = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        if sys.platform =='win32':    
+            pr = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         msg = pr.stdout.read()
         err = pr.stderr.read()
         if err:
