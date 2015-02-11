@@ -242,7 +242,8 @@ if os.path.exists(directory):
                             git_location=i
                             GitFound=Gitcommit(git_location, repository, files)
                         else:
-                            print ""                
+                            print ""     
+                
                 else:
                     print "We just can't fing GIT anywhere..."
                     print "Variable type that was returned by our search"
@@ -250,19 +251,19 @@ if os.path.exists(directory):
                 
             if GitFound==False and sys.platform =='win32':
                 print "running Windows"
-                error=False
                 try:
                     git_location=subprocess.check_output("where git", stderr=subprocess.STDOUT)
                 except subprocess.CalledProcessError as e:
                     print e.output
+                    print git_location 
                     pass
-                if type(git_location)==str and error!=True:                
+                if type(git_location)==str and git_location!=False:                
                     git_location_templist = git_location.split("Git")
                     git_location = git_location_templist[0]+r'Git\bin\git.exe'
                     print git_location
                     os.chdir(repository)
                     GitFound=Gitcommit(git_location, repository, files)
-                if type(git_location)==list and error!=True:
+                if type(git_location)==list and git_location!=False:
                     for i in git_location:
                         try:
                             git_location_templist = git_location.split("Git")
@@ -272,10 +273,36 @@ if os.path.exists(directory):
                             GitFound=Gitcommit(git_location, repository, files)                            
                         except:
                             print i                  
-                if type(git_location)!=list and type(git_location)!=str and error!=True:
+                if type(git_location)!=list and type(git_location)!=str and git_location!=False:
                     print "What kind of weird file structure is that? I found this directory:"
-                    print git_location                
-                
+                    print git_location       
+                             
+            if GitFound==False and sys.platform =='win32':
+                print "searching disk for git..."
+                print "running Windows"
+                location_list=[]
+                for root, dirs, files in os.walk(r'c:\\'):
+                    for name in files:
+                        if name == "git.exe":
+                            #print os.path.abspath(os.path.join(root, name))
+                            place=os.path.abspath(os.path.join(root, name))
+                            if place.endswith("bin\git.exe"):
+                                print "candidate path found"
+                                location_list.append(place)   
+
+                for i in location_list:
+                    try:
+                        git_location_templist = i.split("Git")
+                        git_location = git_location_templist[0]+r'Git\bin\git.exe'
+                        if os.path.isfile(git_location)==False:
+                            continue
+                        print git_location
+                        GitFound=Gitcommit(git_location, repository, files)                            
+                    except:
+                        print i                     
+                if type(git_location)!=list and type(git_location)!=str and git_location!=False:
+                    print "What kind of weird file structure is that? I found this directory:"
+                    print git_location                    
             
             if GitFound==False and sys.platform =='darwin':
                 print "searching git"
