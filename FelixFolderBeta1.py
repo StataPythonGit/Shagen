@@ -116,6 +116,14 @@ def Gitcommit(git_directory=None, repository=None, files=None):
     else:
         print "git not found"
         return False    
+        
+def getname():
+    name = raw_input("Enter a project name:\n")
+    while name=="":
+        name = raw_input("The name has to be non empty - duh, or q for quit:")
+    if name=="q":
+        sys.exit("set up aborted")  
+    return name          
 
 def execGitCommand(command=None, verbose=False):
     """    Function used to get data out of git commads
@@ -148,11 +156,7 @@ def execGitCommand(command=None, verbose=False):
 
 
 # Ask the user for name
-name = raw_input("Enter a project name:\n")
-while name=="":
-    name = raw_input("The name has to be non empty - duh, or q for quit:")
-    if name=="q":
-        sys.exit("set up aborted")
+name=getname()
 directory="False"
 GitFound=False
 
@@ -163,14 +167,20 @@ while os.path.exists(directory)==False:
         sys.exit("set up aborted")
     directory=stripcolon(directory)
     directory=os.path.expanduser(directory)
+    if directory.endswith('/'):
+        directory=directory[:-1]
     print directory
     exist= os.path.exists(directory)
     print "exists:", exist
+    if os.path.exists(directory + "/" +name):
+        directory=""
+        print "\n this folder name already exists \n"
+        name=getname()
+        
 
 
 if os.path.exists(directory):
     print 'mkdir %(dir)s / %(name)s' %{"dir": directory ,"name":name}
-    # Set up the echo command and direct the output to a pipe
     os.chdir(r'%s' %directory)
     os.mkdir(name)
     directory= directory + "/" +name
@@ -209,15 +219,16 @@ if os.path.exists(directory):
         print repository
         if os.path.exists(repository):
             os.chdir(repository)
-            git_init=execGitCommand(r"git init")                
-            print git_init
+            #git_init=execGitCommand(r"git init")                
+            #print git_init
             if os.path.isfile(git_location):
                 GitFound=Gitcommit(git_location, repository, files)
 
             if GitFound==False and sys.platform =='darwin':
                 print "running mac OS"
-                git_location=which("git")
+                
                 try:
+                    git_location=which("git")
                     git_location=git_location[0]
                     print git_location
                 except IOError:
@@ -239,14 +250,19 @@ if os.path.exists(directory):
                 
             if GitFound==False and sys.platform =='win32':
                 print "running Windows"
-                git_location=subprocess.check_output("where git")
-                if type(git_location)==str:                
+                error=False
+                try:
+                    git_location=subprocess.check_output("where git", stderr=subprocess.STDOUT)
+                except subprocess.CalledProcessError as e:
+                    print e.output
+                    pass
+                if type(git_location)==str and error!=True:                
                     git_location_templist = git_location.split("Git")
                     git_location = git_location_templist[0]+r'Git\bin\git.exe'
                     print git_location
                     os.chdir(repository)
                     GitFound=Gitcommit(git_location, repository, files)
-                if type(git_location)==list:
+                if type(git_location)==list and error!=True:
                     for i in git_location:
                         try:
                             git_location_templist = git_location.split("Git")
@@ -256,7 +272,7 @@ if os.path.exists(directory):
                             GitFound=Gitcommit(git_location, repository, files)                            
                         except:
                             print i                  
-                if type(git_location)!=list and type(git_location)!=str:
+                if type(git_location)!=list and type(git_location)!=str and error!=True:
                     print "What kind of weird file structure is that? I found this directory:"
                     print git_location                
                 
