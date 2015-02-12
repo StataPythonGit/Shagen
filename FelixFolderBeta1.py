@@ -168,7 +168,10 @@ while os.path.exists(directory)==False:
     directory=stripcolon(directory)
     directory=os.path.expanduser(directory)
     if directory.endswith('/'):
-        directory=directory[:-1]
+        if sys.platform =='darwin':
+            directory=directory[:-1]
+        else:
+            print "You are on Windows, thumbs up!"
     print directory
     exist= os.path.exists(directory)
     print "exists:", exist
