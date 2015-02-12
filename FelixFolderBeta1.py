@@ -278,7 +278,8 @@ if os.path.exists(directory):
                     print git_location       
                              
             if GitFound==False and sys.platform =='win32':
-                print "searching disk for git..."
+                print "searching disk for git...\n"
+                print "please get yourself a tea with milk, this step can take a few minutes \n"
                 print "running Windows"
                 location_list=[]
                 for root, dirs, files in os.walk(r'c:\\'):
