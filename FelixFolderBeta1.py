@@ -78,7 +78,9 @@ def InitializeGit(git_directory=None):
 def stripcolon(text):
     text=r'%s' %text
     text=text.strip()    
-    text=text.strip('"')    
+    text=text.strip('"') 
+    if text.endswith('/'):
+        text=text[:-1]   
     text=text.replace('\\',"/")
     #text='"'+text+'"'
     return text
@@ -167,8 +169,6 @@ while os.path.exists(directory)==False:
         sys.exit("set up aborted")
     directory=stripcolon(directory)
     directory=os.path.expanduser(directory)
-    if directory.endswith('/'):
-        directory=directory[:-1]
     print directory
     exist= os.path.exists(directory)
     print "exists:", exist
