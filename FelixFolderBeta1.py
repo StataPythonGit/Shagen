@@ -107,7 +107,7 @@ def Gitcommit(git_directory=None, repository=None, files=None):
         #    file_location="%s/%s" %(repository, m)
         #    execGitCommand("%s add '%s'.do'" %(git_directory, file_location), True)  
             #print "file added to git"
-        append = """/*********************************************************\n*********************Commit to local Git***************************\n********************************************************/\n\nshell capture cd "$do_path" \nshell \"%s\" add -A \nshell \"%s\" commit -m \"version $datum\"""" %(git_directory, git_directory)
+        append = """/*********************************************************\n*********************Commit to local Git***************************\n********************************************************/\n\nshell \"%s\" --git-dir "$do_path/.git" --work-tree "$do_path/." commit -a -m "version $datum" """ %(git_directory)
         os.chdir(repository)
         open("0-master.do" , "a").write(append)
         open("1-preparation.do" , "a").write(append)
