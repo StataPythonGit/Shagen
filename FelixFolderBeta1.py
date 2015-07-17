@@ -9,7 +9,7 @@ import os
 import re
 import sys
 import subprocess
-
+from distutils import spawn 
     
 def which(name, flags=os.X_OK):
         """Search PATH for executable files with the given name.
@@ -238,7 +238,7 @@ if os.path.exists(directory):
                     GitFound=Gitcommit(git_location, repository, files)
                 elif type(git_location)==list:
                     for i in git_location:
-                        if 'git/bin/git' in i:
+                        if '/bin/git' in i:
                             git_location=i
                             GitFound=Gitcommit(git_location, repository, files)
                         else:
@@ -259,7 +259,7 @@ if os.path.exists(directory):
                     pass
                 if type(git_location)==str and git_location!=False:                
                     git_location_templist = git_location.split("Git")
-                    git_location = git_location_templist[0]+r'Git\bin\git.exe'
+                    git_location = git_location_templist[0]+r'\bin\git.exe'
                     print git_location
                     os.chdir(repository)
                     GitFound=Gitcommit(git_location, repository, files)
@@ -267,16 +267,20 @@ if os.path.exists(directory):
                     for i in git_location:
                         try:
                             git_location_templist = git_location.split("Git")
-                            git_location = git_location_templist[0]+r'Git\bin\git.exe'
+                            git_location = git_location_templist[0]+r'\bin\git.exe'
                             print git_location
                             os.chdir(repository)
                             GitFound=Gitcommit(git_location, repository, files)                            
                         except:
-                            print i                  
+                            print i             
                 if type(git_location)!=list and type(git_location)!=str and git_location!=False:
                     print "What kind of weird file structure is that? I found this directory:"
                     print git_location       
-                             
+            if GitFound==False and sys.platform =='win32':
+                git_path = spawn.find_executable("git")
+                if git_path!=None:
+                    GitFound=Gitcommit(git_location, repository, files)
+                 
             if GitFound==False and sys.platform =='win32':
                 print "searching disk for git...\n"
                 print "please get yourself a tea with milk, this step can take a few minutes \n"
@@ -289,21 +293,28 @@ if os.path.exists(directory):
                             place=os.path.abspath(os.path.join(root, name))
                             if place.endswith("bin\git.exe"):
                                 print "candidate path found"
-                                location_list.append(place)   
+                                if os.path.isfile(place)==False:
+                                    continue
+                                print place
+                                try:
+                                    GitFound=Gitcommit(place, repository, files)                            
+                                except:
+                                    print i 
+#                                location_list.append(place)   
 
-                for i in location_list:
-                    try:
-                        git_location_templist = i.split("Git")
-                        git_location = git_location_templist[0]+r'Git\bin\git.exe'
-                        if os.path.isfile(git_location)==False:
-                            continue
-                        print git_location
-                        GitFound=Gitcommit(git_location, repository, files)                            
-                    except:
-                        print i                     
-                if type(git_location)!=list and type(git_location)!=str and git_location!=False:
-                    print "What kind of weird file structure is that? I found this directory:"
-                    print git_location                    
+#                for i in location_list:
+#                    try:
+#                        git_location_templist = i.split("Git")
+#                        git_location = git_location_templist[0]+r'Git\bin\git.exe'
+#                        if os.path.isfile(git_location)==False:
+#                            continue
+#                        print git_location
+#                        GitFound=Gitcommit(git_location, repository, files)                            
+#                    except:
+#                        print i                     
+#                if type(git_location)!=list and type(git_location)!=str and git_location!=False:
+#                    print "What kind of weird file structure is that? I found this directory:"
+#                    print git_location                    
             
             if GitFound==False and sys.platform =='darwin':
                 print "searching git"
