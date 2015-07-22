@@ -99,7 +99,7 @@ def colorText(color, text):
 
     return "\x1b[%sm%s\x1b[m" % (colorCodes[color], text)
 
-def Gitcommit(git_directory=None, repository=None, files=None):
+def Gitcommit(git_directory=None, repository=None, files=None, name=None):
     if os.path.isfile(git_directory):
         execGitCommand(r"%s init" %git_directory, True)
         print "git found on computers program directory"
@@ -107,12 +107,22 @@ def Gitcommit(git_directory=None, repository=None, files=None):
         #    file_location="%s/%s" %(repository, m)
         #    execGitCommand("%s add '%s'.do'" %(git_directory, file_location), True)  
             #print "file added to git"
-        append = """/*********************************************************\n*********************Commit to local Git***************************\n********************************************************/\n\nshell \"%s\" --git-dir "$do_path/.git" --work-tree "$do_path/." commit -a -m "version $datum" """ %(git_directory)
-        os.chdir(repository)
-        open("0-master.do" , "a").write(append)
-        open("1-preparation.do" , "a").write(append)
-        open("2-regressions.do" , "a").write(append)
-        #f.close()
+        os.chdir(repository)        
+        files=['0-master','1-preparation','2-regressions']   
+        for m in files:
+            f=open("%s.do" %m, "w+")
+            if m=="0-master":
+                    basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n \n  \n \n \n /**************** Version Controll ******************************/ \n \n shell \"%s\" --git-dir "$do_path/.git" --work-tree "$do_path/." commit -a -m "version $datum" \n\n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Master File     ********************\n*********************************************************\n\n**********************************\n**Change paths********************\n**********************************/\n\nglobal root "%s" \nglobal do_path "$root/code"\nglobal input_path "$root/input"\nglobal temp_path "$root/temp"\nglobal output_path "$root/output"\nglobal log_path "$root/log"\nglobal datum = subinstr(c(current_date)," ","",.)\n\n**********************************\n**Run Do-Files********************\n**********************************\n\n\ncd "$log_path"\ncap log close\nlog using preparation${datum}, replace\n\ncd "$do_path"\ndo 1-preparation\ncap log close\n\ncd "$log_path"\ncap log close\nlog using regressions${datum}, replace\n\ncd "$do_path"\ndo 2-regressions\ncap log close """ %( name, git_directory, temp_dir)
+                    f.write(basics)
+            if m=="1-preparation":
+                    basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n \n \n \n \n/**************** Version Controll ******************************/ \n \n shell \"%s\" --git-dir "$do_path/.git" --work-tree "$do_path/." commit -a -m "version $datum" \n \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Preparation File     ********************\n*********************************************************/\n\n\nglobal datum = subinstr(c(current_date)," ","",.)\n\n""" %(name, git_directory)
+                    f.write(basics)
+            if m=="2-regressions":
+                    basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n \n \n \n \n /**************** Version Controll *****************************/ \n\n shell \"%s\" --git-dir "$do_path/.git" --work-tree "$do_path/." commit -a -m "version $datum" \n \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Regressions File     ********************\n*********************************************************/\n\n\nglobal datum = subinstr(c(current_date)," ","",.)\n\n""" %(name, git_directory)
+                    f.write(basics)
+            f.close()
+            print "created file  %s.do" %m
+
         InitializeGit(git_directory) 
         return git_directory 
     else:
@@ -190,26 +200,12 @@ if os.path.exists(directory):
         os.chdir(r'%s' %directory)
         os.mkdir(j)
         folder=['input', 'code', 'output', 'temp', 'log']
+        files=['0-master','1-preparation','2-regressions']   
         temp_dir= directory + '/' + j
         os.chdir(temp_dir)
         for s in folder:
             os.mkdir(s)
-            print "created folder in %s" %temp_dir
-        files=['0-master','1-preparation','2-regressions']   
-        os.chdir(temp_dir + '/' + 'code')
-        for m in files:
-            f=open("%s.do" %m, "w+")
-            if m=="0-master":
-                    basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Master File     ********************\n*********************************************************\n\n**********************************\n**Change paths********************\n**********************************/\n\nglobal root "%s" \nglobal do_path "$root/code"\nglobal input_path "$root/input"\nglobal temp_path "$root/temp"\nglobal output_path "$root/output"\nglobal log_path "$root/log"\nglobal datum = subinstr(c(current_date)," ","",.)\n\n**********************************\n**Run Do-Files********************\n**********************************\n\n\ncd "$log_path"\ncap log close\nlog using preparation${datum}, replace\n\ncd "$do_path"\ndo 1-preparation\ncap log close\n\ncd "$log_path"\ncap log close\nlog using regressions${datum}, replace\n\ncd "$do_path"\ndo 2-regressions\ncap log close """ %(name, temp_dir)
-                    f.write(basics)
-            if m=="1-preparation":
-                    basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Preparation File     ********************\n*********************************************************/\n\n\nglobal datum = subinstr(c(current_date)," ","",.)\n\n""" %(name)
-                    f.write(basics)
-            if m=="2-regressions":
-                    basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Regressions File     ********************\n*********************************************************/\n\n\nglobal datum = subinstr(c(current_date)," ","",.)\n\n""" %(name)
-                    f.write(basics)
-            f.close()
-            print "created file  %s.do" %m
+            print "created folder in %s" %temp_dir 
 
 #start the git set up process    
     for j in mains:  
@@ -219,10 +215,11 @@ if os.path.exists(directory):
         print repository
         if os.path.exists(repository):
             os.chdir(repository)
-            #git_init=execGitCommand(r"git init")                
-            #print git_init
-            if os.path.isfile(git_location):
-                GitFound=Gitcommit(git_location, repository, files)
+
+            if GitFound!=False:
+                git_location=GitFound
+                GitFound=Gitcommit(git_location, repository, files, name)
+                continue
 
             if GitFound==False and sys.platform =='darwin':
                 print "running mac OS"
@@ -235,12 +232,12 @@ if os.path.exists(directory):
                     print 'cannot find git'
                 os.chdir(repository)
                 if type(git_location)==str:
-                    GitFound=Gitcommit(git_location, repository, files)
+                    GitFound=Gitcommit(git_location, repository, files, name)
                 elif type(git_location)==list:
                     for i in git_location:
                         if '/bin/git' in i:
                             git_location=i
-                            GitFound=Gitcommit(git_location, repository, files)
+                            GitFound=Gitcommit(git_location, repository, files, name)
                         else:
                             print ""     
                 
@@ -252,34 +249,34 @@ if os.path.exists(directory):
             if GitFound==False and sys.platform =='win32':
                 print "running Windows"
                 try:
-                    git_location=subprocess.check_output("where git", stderr=subprocess.STDOUT)
+                    git_location=subprocess.check_output("where git.exe", stderr=subprocess.STDOUT)
                 except subprocess.CalledProcessError as e:
                     print e.output
                     print git_location 
                     pass
-                if type(git_location)==str and git_location!=False:                
+                if type(git_location)==str and git_location!="False":                
                     git_location_templist = git_location.split("Git")
                     git_location = git_location_templist[0]+r'\bin\git.exe'
                     print git_location
                     os.chdir(repository)
-                    GitFound=Gitcommit(git_location, repository, files)
-                if type(git_location)==list and git_location!=False:
+                    GitFound=Gitcommit(git_location, repository, files, name)
+                if type(git_location)==list and git_location!="False":
                     for i in git_location:
                         try:
                             git_location_templist = git_location.split("Git")
                             git_location = git_location_templist[0]+r'\bin\git.exe'
                             print git_location
                             os.chdir(repository)
-                            GitFound=Gitcommit(git_location, repository, files)                            
+                            GitFound=Gitcommit(git_location, repository, files, name)                            
                         except:
                             print i             
                 if type(git_location)!=list and type(git_location)!=str and git_location!=False:
                     print "What kind of weird file structure is that? I found this directory:"
                     print git_location       
-            if GitFound==False and sys.platform =='win32':
-                git_path = spawn.find_executable("git")
-                if git_path!=None:
-                    GitFound=Gitcommit(git_location, repository, files)
+#            if GitFound==False and sys.platform =='win32':
+#                git_path = spawn.find_executable("git")
+#                if git_path!=None:
+#                    GitFound=Gitcommit(git_location, repository, files. name)
                  
             if GitFound==False and sys.platform =='win32':
                 print "searching disk for git...\n"
@@ -288,7 +285,7 @@ if os.path.exists(directory):
                 location_list=[]
                 for root, dirs, files in os.walk(r'c:\\'):
                     for name in files:
-                        if name == "git.exe":
+                        if name == "git.exe" and GitFound==False:
                             #print os.path.abspath(os.path.join(root, name))
                             place=os.path.abspath(os.path.join(root, name))
                             if place.endswith("bin\git.exe"):
@@ -297,9 +294,11 @@ if os.path.exists(directory):
                                     continue
                                 print place
                                 try:
-                                    GitFound=Gitcommit(place, repository, files)                            
+                                    GitFound=Gitcommit(place, repository, files, name)  
+                                    if GitFound!=False:
+                                        continue
                                 except:
-                                    print i 
+                                    print name 
 #                                location_list.append(place)   
 
 #                for i in location_list:
@@ -309,7 +308,7 @@ if os.path.exists(directory):
 #                        if os.path.isfile(git_location)==False:
 #                            continue
 #                        print git_location
-#                        GitFound=Gitcommit(git_location, repository, files)                            
+#                        GitFound=Gitcommit(git_location, repository, files, name)                            
 #                    except:
 #                        print i                     
 #                if type(git_location)!=list and type(git_location)!=str and git_location!=False:
@@ -321,12 +320,12 @@ if os.path.exists(directory):
                 git_location=execGitCommand(r"which git")
                                     
                 if type(git_location)==str:
-                        GitFound=Gitcommit(git_location, repository, files)
+                        GitFound=Gitcommit(git_location, repository, files, name)
                 elif type(git_location)==list:
                     for i in git_location:
                         if 'git/bin/git' in i:
                             git_location=i
-                            GitFound=Gitcommit(git_location, repository, files)
+                            GitFound=Gitcommit(git_location, repository, files, name)
                         else:
                             print ""                
                 else:
@@ -336,7 +335,7 @@ if os.path.exists(directory):
     
             if GitFound==False and sys.platform =='darwin':
                 #try to search the standard install directory on a MAC
-                GitFound=Gitcommit("/usr/local/git/bin/git", repository, files) 
+                GitFound=Gitcommit("/usr/local/git/bin/git", repository, files, name) 
                 git_location="/usr/local/git/bin/git"
 
             if GitFound==False:
@@ -347,6 +346,21 @@ if os.path.exists(directory):
                         git_location = raw_input('If you already installed GIT: \n Can you tell us the directory of GIT (HINT: it will be in a folder called "bin" e.g. sth like usr/local/git/bin/git ) \n To skip setting up GIT press q:\n')
                         git_location = stripcolon(git_location)                        
                         if  git_location=='q':
+                            os.chdir(repository)
+                            for m in files:
+                                f=open("%s.do" %m, "w+")
+                                if m=="0-master":
+                                        basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Master File     ********************\n*********************************************************\n\n**********************************\n**Change paths********************\n**********************************/\n\nglobal root "%s" \nglobal do_path "$root/code"\nglobal input_path "$root/input"\nglobal temp_path "$root/temp"\nglobal output_path "$root/output"\nglobal log_path "$root/log"\nglobal datum = subinstr(c(current_date)," ","",.)\n\n**********************************\n**Run Do-Files********************\n**********************************\n\n\ncd "$log_path"\ncap log close\nlog using preparation${datum}, replace\n\ncd "$do_path"\ndo 1-preparation\ncap log close\n\ncd "$log_path"\ncap log close\nlog using regressions${datum}, replace\n\ncd "$do_path"\ndo 2-regressions\ncap log close """ %( name, temp_dir)
+                                        f.write(basics)
+                                if m=="1-preparation":
+                                        basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Preparation File     ********************\n*********************************************************/\n\n\nglobal datum = subinstr(c(current_date)," ","",.)\n\n""" %( name)
+                                        f.write(basics)
+                                if m=="2-regressions":
+                                        basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/  \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Regressions File     ********************\n*********************************************************/\n\n\nglobal datum = subinstr(c(current_date)," ","",.)\n\n""" %( name)
+                                        f.write(basics)
+                                f.close()
+                                print "created file  %s.do" %m
+
                             sys.exit("All folders created, but GIT not set up")                        
                         print git_location  
                         git_location_templist = git_location.split("/")
@@ -354,18 +368,32 @@ if os.path.exists(directory):
                             git_location = git_location + "/git"
                         print git_location                    
 
-                        GitFound=Gitcommit(git_location, repository, files)
+                        GitFound=Gitcommit(git_location, repository, files, name)
                     if sys.platform =='win32':
                         git_location = raw_input(r"If you already installed GIT: Can you tell us the directory of GIT (pls enter the full directory of git.exe e.g. C:\appdata\local\programs\git\bin\git ) \n or enter q to skip setting up GIT?:\n")
                         git_location = stripcolon(git_location)                        
                         if  git_location=='q':
+                            for m in files:
+                                f=open("%s.do" %m, "w+")
+                                if m=="0-master":
+                                        basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Master File     ********************\n*********************************************************\n\n**********************************\n**Change paths********************\n**********************************/\n\nglobal root "%s" \nglobal do_path "$root/code"\nglobal input_path "$root/input"\nglobal temp_path "$root/temp"\nglobal output_path "$root/output"\nglobal log_path "$root/log"\nglobal datum = subinstr(c(current_date)," ","",.)\n\n**********************************\n**Run Do-Files********************\n**********************************\n\n\ncd "$log_path"\ncap log close\nlog using preparation${datum}, replace\n\ncd "$do_path"\ndo 1-preparation\ncap log close\n\ncd "$log_path"\ncap log close\nlog using regressions${datum}, replace\n\ncd "$do_path"\ndo 2-regressions\ncap log close """ %( name, temp_dir)
+                                        f.write(basics)
+                                if m=="1-preparation":
+                                        basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Preparation File     ********************\n*********************************************************/\n\n\nglobal datum = subinstr(c(current_date)," ","",.)\n\n""" %( name)
+                                        f.write(basics)
+                                if m=="2-regressions":
+                                        basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/  \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Regressions File     ********************\n*********************************************************/\n\n\nglobal datum = subinstr(c(current_date)," ","",.)\n\n""" %( name)
+                                        f.write(basics)
+                                f.close()
+                                print "created file  %s.do" %m
+
                             sys.exit("All folders created, but GIT not set up")                        
                         print git_location  
                         git_location = git_location + "\git.exe"
                         print git_location                    
 
-                        GitFound=Gitcommit(git_location, repository, files)
-            if GitFound==True:
+                        GitFound=Gitcommit(git_location, repository, files, name)
+            if GitFound!=False:
                 print "Git found"
         else:
             print "OS path doesn't seem to exist"
