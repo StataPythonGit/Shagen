@@ -5,7 +5,7 @@ Program that sets up folders for data analysis and version control (via git).
 
 If you have python installed run the file by opening the "command line" (Windows) or "terminal" mac. Enter
 
-python "/path/to/file/FelixFolderBeta.py"
+python "/path/to/file/FelixFolderBeta1.py"
 
 you will need to replace "path/to/file/" with the path to the downloaded file.
 
