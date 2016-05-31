@@ -1,6 +1,6 @@
 # Shagen - Organize your data like a Chicago prof
 
-Program that sets up folders for data analysis and version control (using git). 
+The python file sets up folders for data analysis and version control (using git) for a data based project. 
 
 If you have python installed run the file by opening the "command line" (Windows) or "terminal" (mac). Enter
 
