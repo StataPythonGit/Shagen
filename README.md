@@ -1,9 +1,8 @@
-# Shagen
-Organize your data like a Chicago prof
+# Shagen - Organize your data like a Chicago prof
 
-Program that sets up folders for data analysis and version control (via git). 
+Program that sets up folders for data analysis and version control (using git). 
 
-If you have python installed run the file by opening the "command line" (Windows) or "terminal" mac. Enter
+If you have python installed run the file by opening the "command line" (Windows) or "terminal" (mac). Enter
 
 python "/path/to/file/FelixFolderBeta1.py"
 
