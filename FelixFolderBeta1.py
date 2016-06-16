@@ -8,82 +8,45 @@ Created on 24.05.2014
 import os
 import re
 import sys
-
 import subprocess
+from distutils import spawn
 
-	
+
+# Functions to search for git on computer
 def which(name, flags=os.X_OK):
-	    """Search PATH for executable files with the given name.
-12	   
-13	    On newer versions of MS-Windows, the PATHEXT environment variable will be
-14	    set to the list of file extensions for files considered executable. This
-15	    will normally include things like ".EXE". This fuction will also find files
-16	    with the given name ending with any of these extensions.
-17	
-18	    On MS-Windows the only flag that has any meaning is os.F_OK. Any other
-19	    flags will be ignored.
-20	   
-21	    @type name: C{str}
-22	    @param name: The name for which to search.
-23	   
-24	    @type flags: C{int}
-25	    @param flags: Arguments to L{os.access}.
-26	   
-27	    @rtype: C{list}
-28	    @param: A list of the full paths to files found, in the
-29	    order in which they were found.
-30	    """
-	    result = []
-	    exts = filter(None, os.environ.get('PATHEXT', '').split(os.pathsep))
-	    path = os.environ.get('PATH', None)
-	    if path is None:
-	        return []
-	    for p in os.environ.get('PATH', '').split(os.pathsep):
-	        p = os.path.join(p, name)
-	        if os.access(p, flags):
-	            result.append(p)
-	        for e in exts:
-	            pext = p + e
-	            if os.access(pext, flags):
-	                result.append(pext)
-	    return result
+    result = []
+    exts = filter(None, os.environ.get('PATHEXT', '').split(os.pathsep))
+    path = os.environ.get('PATH', None)
+    if path is None:
+        return []
+    for p in os.environ.get('PATH', '').split(os.pathsep):
+        p = os.path.join(p, name)
+        if os.access(p, flags):
+            result.append(p)
+        for e in exts:
+            pext = p + e
+            if os.access(pext, flags):
+                result.append(pext)
+    return result
+
 
 def find(name, path):
     for root, dirs, files in os.walk(path):
         if name in files:
             return os.path.join(root, name)
 
-def InitializeGit(git_directory=None):
-    if os.path.exists("%s" %git_directory)==False:
-        print "can't find git"        
-    else:
-        execGitCommand("%s add -A" %git_directory, True)
-        execGitCommand("%s commit -m 'first commit'" %git_directory, True)
-        print "you are all set up on git"
 
-        #git_choice = raw_input("Do you want to use GitHub (y/n):")
-        #if git_choice=="y":
-         #   git_hub = raw_input("what is the link to your github?:")
-          #  user = raw_input("what is your github username?:")
-           # passw = raw_input("what is your github password?:")
-    
-            #try:
-             #   execGitCommand("%(dir)s/git remote add origin %(hub)s" %dict(dir=git_directory, hub=git_hub) , True)
-              #  execGitCommand("%s/git push origin master" %git_directory, True)
-            #finally:
-             #   execGitCommand("%(dir)s/git remote set-url origin %(hub)s| %(user)s | %(passw)s" %dict(dir=git_directory, hub=git_hub, user=user, passw=passw) , True)
-              #  execGitCommand("%s/git push origin master" %git_directory, True)
-
-
-       # else:
+# Make things pretty functions
 def stripcolon(text):
     text=r'%s' %text
-    text=text.strip()    
-    text=text.strip('"')    
+    text=text.strip()
+    text=text.strip('"')
+    if text.endswith('/'):
+        text=text[:-1]
     text=text.replace('\\',"/")
     #text='"'+text+'"'
     return text
-    
+
 def colorText(color, text):
     colorCodes = {
         'black':'30',
@@ -98,19 +61,27 @@ def colorText(color, text):
 
     return "\x1b[%sm%s\x1b[m" % (colorCodes[color], text)
 
-def Gitcommit(git_directory=None, repository=None, files=None):
+# Functions that set up git
+def GitSetUp(git_directory=None, repository=None, files=None, name=None, temp_dir=None):
     if os.path.isfile(git_directory):
-        print "git found on computers program directory"
         execGitCommand(r"%s init" %git_directory, True)
-        for m in files:
-            file_location="%s/%s" %(repository, m)
-            execGitCommand("%s add '%s'.do'" %(git_directory, file_location), True)  
-            print "file added to git"
-        InitializeGit(git_directory) 
-        return git_directory 
+        print "git found on computers program directory"
+        doFileCreator(repository, name, git_directory, temp_dir)
+        GitBackUp(git_directory)
+        return git_directory
     else:
         print "git not found"
-        return False    
+        return False
+
+
+def GitBackUp(git_directory=None):
+    if os.path.exists("%s" %git_directory)==False:
+        print "can't find git"
+    else:
+        execGitCommand("%s add -A" %git_directory, True)
+        execGitCommand('%s commit -m "first commit"' %git_directory, True)
+        print "you are all set up on git"
+
 
 def execGitCommand(command=None, verbose=False):
     """    Function used to get data out of git commads
@@ -126,34 +97,189 @@ def execGitCommand(command=None, verbose=False):
     if command:
         # converts multiple spaces to single space
         command = re.sub(' +',' ',command)
-        pr = subprocess.Popen(command, shell=True,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if sys.platform =='darwin':
+            pr = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        if sys.platform =='win32':
+            pr = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         msg = pr.stdout.read()
         err = pr.stderr.read()
         if err:
             print err
         if verbose and msg:
-            print "Executing '%s'\n %s" % (command, colorText('red', 'Result:\n%s' % msg))
+            print "Executing '%s'\n %s" % (command, msg)
         return msg, err
-    
+
+def doFileCreator(repository=None, name=None, git_directory=None, project_dir=None):
+    os.chdir(repository)
+    files=['0-master','1-preparation','2-regressions']
+    task_folder = os.path.basename(os.path.dirname(repository))
+    for m in files:
+        f=open("%s.do" %m, "w+")
+        if m=="0-master" and task_folder == "build":
+            basics=("""/*************************************************/ \n"""
+                    """/*************************************************/ \n"""
+                    """/****************  %(name)s  ***************/ \n"""
+                    """/*************************************************/ \n"""
+                    """/*************************************************/ \n \n  \n \n \n"""
+                    """clear \ngraph set print logo off \n \n"""
+                    """graph set print tmargin 1 \n"""
+                    """graph set print lmargin 1\n"""
+                    """set more off, perm\n"""
+                    """set emptycells drop\n\n"""
+                    """clear\n"""
+                    """clear matrix\n"""
+                    """set matsize 800\n\n"""
+                    """set varabbrev on\n\n/"""
+                    """*********************************************************\n"""
+                    """*************         Master File     ********************\n"""
+                    """*********************************************************\n\n"""
+                    """**********************************\n"""
+                    """**Change paths********************\n"""
+                    """**********************************/\n\n"""
+                    """if regexm(c(os),"Mac") == 1 {\n"""
+                    """    global root "%(root)s" \n"""
+                    """    }\n"""
+                    """else if regexm(c(os),"Windows") == 1 {\n"""
+                    """    global root "%(root)s" \n"""
+                    """}\n"""
+                    """global do_path "$root/%(task)s/code"\n """
+                    """global input_path "$root/%(task)s/input"\n """
+                    """global temp_path "$root/%(task)s/temp"\n """
+                    """global output_path "$root/%(task)s/output"\n """
+                    """global log_path "$root/%(task)s/log"\n """
+                    """global datum = subinstr(c(current_date)," ","",.)\n"""
+                    """cd "$input_path" \n"""
+                    """/**************** Version Controll ******************************/ \n \n"""
+                    """shell \"%(git)s\" --git-dir "$do_path/.git" --work-tree "$do_path/." commit -a -m "version $datum" \n\n\n"""
+                    """**********************************\n"""
+                    """**Run Do-Files********************\n"""
+                    """**********************************\n\n\n"""
+                    """cd "$log_path"\n"""
+                    """cap log close\n"""
+                    """log using preparation${datum}, replace\n\n"""
+                    """cd "$do_path"\ndo 1-preparation\n"""
+                    """cap log close\n\n"""
+                    """cd "$log_path"\n"""
+                    """cap log close\n"""
+                    """log using regressions${datum}, replace\n\n"""
+                    """cd "$do_path"\ndo 2-regressions\n"""
+                    """cap log close """) %{"git": git_directory, "task": task_folder, "root": project_dir, "name": name}
+            f.write(basics)
+        if m=="0-master" and task_folder == "analysis":
+            basics=("""/*************************************************/ \n"""
+                    """/*************************************************/ \n"""
+                    """/****************  %(name)s  ***************/ \n"""
+                    """/*************************************************/ \n"""
+                    """/*************************************************/ \n \n  \n \n \n"""
+                    """clear \ngraph set print logo off \n \n"""
+                    """graph set print tmargin 1 \n"""
+                    """graph set print lmargin 1\n"""
+                    """set more off, perm\n"""
+                    """set emptycells drop\n\n"""
+                    """clear\n"""
+                    """clear matrix\n"""
+                    """set matsize 800\n\n"""
+                    """set varabbrev on\n\n/"""
+                    """*********************************************************\n"""
+                    """*************         Master File     ********************\n"""
+                    """*********************************************************\n\n"""
+                    """**********************************\n"""
+                    """**Change paths********************\n"""
+                    """**********************************/\n\n"""
+                    """if regexm(c(os),"Mac") == 1 {\n"""
+                    """    global root "%(root)s" \n"""
+                    """}\n"""
+                    """else if regexm(c(os),"Windows") == 1 {\n"""
+                    """    global root "%(root)s" \n"""
+                    """}\n"""
+                    """global do_path "$root/%(task)s/code"\n """
+                    """global input_path "$root/%(task)s/input"\n """
+                    """global temp_path "$root/%(task)s/temp"\n """
+                    """global output_path "$root/%(task)s/output"\n """
+                    """global log_path "$root/%(task)s/log"\n """
+                    """global datum = subinstr(c(current_date)," ","",.)\n"""
+                    """cd "$input_path" \n"""
+                    """/**************** Version Controll ******************************/ \n \n"""
+                    """shell \"%(git)s\" --git-dir "$do_path/.git" --work-tree "$do_path/." commit -a -m "version $datum" \n\n\n"""
+                    """**copy files from build output\n"""
+                    """**windows\n"""
+                    """if c(os) == "Windows" {\n"""
+                    """ shell xcopy "$root/build/output" "$input_path" /I /S\n"""
+                    """}\n"""
+                    """**OS\n"""
+                    """if c(os) == "MacOSX" {\n"""
+                    """ !mv -f "$root/build/output/"* "$input_path/" \n"""
+                    """}\n"""
+                    """**********************************\n"""
+                    """**Run Do-Files********************\n"""
+                    """**********************************\n\n\n"""
+                    """cd "$log_path"\n"""
+                    """cap log close\n"""
+                    """log using preparation${datum}, replace\n\n"""
+                    """cd "$do_path"\ndo 1-preparation\n"""
+                    """cap log close\n\n"""
+                    """cd "$log_path"\n"""
+                    """cap log close\n"""
+                    """log using regressions${datum}, replace\n\n"""
+                    """cd "$do_path"\ndo 2-regressions\n"""
+                    """cap log close """) %{"git": git_directory, "task": task_folder, "root": project_dir, "name": name}
+            f.write(basics)
+        if m=="1-preparation":
+            basics=("""/*************************************************/ \n"""
+                    """/*************************************************/ \n"""
+                    """/****************  %s  ***************/ \n"""
+                    """/*************************************************/ \n"""
+                    """/*************************************************/ \n \n \n \n \n"""
+                    """/**************** Version Controll ******************************/ \n \n"""
+                    """shell \"%s\" --git-dir "$do_path/.git" --work-tree "$do_path/." commit -a -m "version $datum" \n \n\n"""
+                    """clear \n\n\n"""
+                    """/*********************************************************\n"""
+                    """*************         Preparation File     ********************\n"""
+                    """*********************************************************/\n\n\n"""
+                    """global datum = subinstr(c(current_date)," ","",.)\n\n""") %(name, git_directory)
+            f.write(basics)
+        if m=="2-regressions":
+            basics=("""/*************************************************/ \n/"""
+                    """*************************************************/ \n"""
+                    """/****************  %s  ***************/ \n"""
+                    """/*************************************************/ \n"""
+                    """/*************************************************/ \n \n \n \n \n"""
+                    """/**************** Version Controll *****************************/ \n\n"""
+                    """shell \"%s\" --git-dir "$do_path/.git" --work-tree "$do_path/." commit -a -m "version $datum" \n \n\nclear \n"""
+                    """/*********************************************************\n"""
+                    """*************         Regressions File     ********************\n"""
+                    """*********************************************************/\n\n\n"""
+                    """global datum = subinstr(c(current_date)," ","",.)\n\n""") %(name, git_directory)
+            f.write(basics)
+            f.close()
+            print "created file  %s.do" %m
 
 
+def getname():
+    name = raw_input("Enter a project name:\n")
+    while name=="":
+        name = raw_input("The name has to be non empty - duh, or q for quit:")
+    if name=="q":
+        sys.exit("set up aborted")
+    return name
 
+# %%
 
+###############################################################################
+###############################################################################
+#################       project name & place            #######################
+###############################################################################
+###############################################################################
 
 
 # Ask the user for name
-name = raw_input("Enter a project name:")
-while name=="":
-    name = raw_input("The name has to be non empty - duh, or q for quit:")
-    if name=="q":
-        sys.exit("set up aborted")
+name=getname()
 directory="False"
 GitFound=False
 
 #ask user for directory to set up folders
 while os.path.exists(directory)==False:
-    directory = raw_input('Enter the directory where folders should be set up (e.g. /Users/USERNAME/Documents) or q for quit: ')    
+    directory = raw_input('Enter the directory where folders should be set up (the path to the folder where you keep your research projects e.g. /Users/USERNAME/Documents) or q for quit: \n')
     if directory=="q":
         sys.exit("set up aborted")
     directory=stripcolon(directory)
@@ -161,89 +287,158 @@ while os.path.exists(directory)==False:
     print directory
     exist= os.path.exists(directory)
     print "exists:", exist
+    if os.path.exists(directory + "/" +name):
+        directory=""
+        print "\n this folder name already exists \n"
+        name=getname()
+
+
+
+# %%
+
+###############################################################################
+###############################################################################
+####################          create folders        ###########################
+###############################################################################
+###############################################################################
+
 
 
 if os.path.exists(directory):
     print 'mkdir %(dir)s / %(name)s' %{"dir": directory ,"name":name}
-    # Set up the echo command and direct the output to a pipe
     os.chdir(r'%s' %directory)
     os.mkdir(name)
-    directory= directory + "/" +name
+    directory = os.path.join(directory , name)
     mains=['build', 'analysis']
     git_location="False"
     for j in mains:
         os.chdir(r'%s' %directory)
         os.mkdir(j)
         folder=['input', 'code', 'output', 'temp', 'log']
+        files=['0-master','1-preparation','2-regressions']
         temp_dir= directory + '/' + j
         os.chdir(temp_dir)
         for s in folder:
             os.mkdir(s)
             print "created folder in %s" %temp_dir
 
-        files=['0-master','1-preparation','2-regressions']   
-        os.chdir(temp_dir + '/' + 'code')
-        for m in files:
-            f=open("%s.do" %m, "w+")
-            if m=="0-master":
-                    basics="""/*************************************************/ \n/*************************************************/ \n/****************  %s  ***************/ \n/*************************************************/ \n/*************************************************/ \n\nclear \ngraph set print logo off \n \ngraph set print tmargin 1 \ngraph set print lmargin 1\nset more off, perm\nset emptycells drop\n\nclear\nclear matrix\nset matsize 800\n\nset memory 4g\nset varabbrev on\n\n/*********************************************************\n*************         Master File     ********************\n*********************************************************\n\n**********************************\n**Change paths********************\n**********************************/\n\nglobal root "%s" \nglobal do_path "$root/code"\nglobal input_data_path "$root/input"\nglobal output_path "$root/output"\nglobal log_path "$root/log"\nglobal datum = subinstr(c(current_date)," ","",.)\n\n**********************************\n**Run Do-Files********************\n**********************************\n\n\ncd "$log_path"\ncap log close\nlog using preparation${datum}, replace\n\ncd "$do_path"\ndo 1-preparation\ncap log close\n\ncd "$log_path"\ncap log close\nlog using regressions${datum}, replace\n\ncd "$do_path"\ndo 2-regressions\ncap log close \n\nexit, STATA clear \n \n """ %(name, temp_dir)
-                    f.write(basics)
-                    f.close()
-            print "created file  %s.do" %m
-#start the git set up process    
-    for j in mains:  
+# %%
+
+###############################################################################
+###############################################################################
+####################          GIT set up            ###########################
+###############################################################################
+###############################################################################
+
+
+    #start the git set up process
+    for j in mains:
         print "setting up git"
-        
+
         repository  = "%(dir)s/%(folder)s/code" %{"dir": directory ,"folder":j}
         print repository
-        if os.path.exists(repository):
-            os.chdir(repository)
-            git_init=execGitCommand(r"git init")                
-            print git_init
-            if os.path.isfile(git_location):
-                GitFound=Gitcommit(git_location, repository, files)
-#==============================================================================
-#             if GitFound==False:
-#                 git_location=which("git") 
-#                 print git_location
-#                 os.chdir(repository)
-#                 GitFound=Gitcommit(git_location, repository, files)                    
-#==============================================================================
-            if GitFound==False:
-                print "searching git"
-                git_lcoation=execGitCommand(r"which git")                
+        os.chdir(repository)
+
+        if GitFound!=False:
+            git_location=GitFound
+            GitFound=GitSetUp(git_location, repository, files, name, directory)
+            continue
+
+        if GitFound==False and sys.platform =='darwin':
+            #try to search the standard install directory on a MAC
+            GitFound=GitSetUp("/usr/local/git/bin/git", repository, files, name, j)
+            git_location="/usr/local/git/bin/git"
+
+
+        if GitFound==False and sys.platform =='darwin':
+            print "running mac OS"
+            try:
+                git_location=which("git")
                 print git_location
-                GitFound=Gitcommit(git_location, repository, files)
-            if GitFound==False:
-                    #try to search the standard install directory on a MAC
-                    GitFound=Gitcommit("/usr/local/git/bin/git", repository, files) 
-                    git_location="/usr/local/git/bin/git"
-            if GitFound==False:
-                    #search the standard install directory on Windows
-                    GitFound=Gitcommit("C:\users\USERNAME\programs\git\bin\git", repository, files)
-                    git_location="C:\users\USERNAME\programs\git\bin\git"
-            if GitFound==False:
-                git_location="False"
-                while os.path.isfile(git_location)==False:
-                    print "location of git not found"
-                    git_location = raw_input(r"where did you install git (pls enter the full directory of git.exe e.g. C:\appdata\local\programs\git\bin\git ) or q to skip git set up?:")
-                    print git_location  
-                    git_location = git_location + "\git.exe"
-                    git_location = stripcolon(git_location)
-                    print git_location                    
-                    if  git_location=='"q"':
-                        sys.exit("git not set up, but folders created")
-                    GitFound=Gitcommit(git_location, repository, files)
-            if GitFound==True:
-                print "Git found"
-        else:
-            print "OS path doesn't seem to exist"
+            except IOError:
+                print 'cannot find git'
+            os.chdir(repository)
+            if type(git_location)==str:
+                GitFound=GitSetUp(git_location, repository, files, name, j)
+            elif type(git_location)==list:
+                for i in git_location:
+                    if '/bin/git' in i:
+                        git_location=i
+                        GitFound=GitSetUp(git_location, repository, files, name, j)
+                    else:
+                        print ""
+            else:
+                print "We just can't fing GIT anywhere..."
+                print "Variable type that was returned by our search"
+                print type(git_location)
 
-  
-                                        
+        if GitFound==False and sys.platform =='win32':
+            print "running Windows"
+            try:
+                git_location=subprocess.check_output("where git.exe", stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                print e.output
+                print git_location
+                pass
+            if type(git_location)==str and git_location!="False":
+                git_location_templist = git_location.split("Git")
+                git_location = git_location_templist[0]+r'\bin\git.exe'
+                print git_location
+                os.chdir(repository)
+                GitFound=GitSetUp(git_location, repository, files, name, j)
+            if type(git_location)==list and git_location!="False":
+                for i in git_location:
+                    try:
+                        git_location_templist = git_location.split("Git")
+                        git_location = git_location_templist[0]+r'\bin\git.exe'
+                        print git_location
+                        os.chdir(repository)
+                        GitFound=GitSetUp(git_location, repository, files, name, j)
+                    except:
+                        print i
+            if type(git_location)!=list and type(git_location)!=str and git_location!=False:
+                print "What kind of weird file structure is that? I found this directory:"
+                print git_location
+
+
+    if GitFound==False:
+        git_location="False"
+        while os.path.isfile(git_location)==False:
+            print "\n We couldn't find GIT on your computer. \n\n If you haven't installed GIT:\n Read ch.3 of Gentzkow & Shapiro on version controll. Git will help you keep track of changes you made in your do files: It also allows you to go back to earlier versions of your work\n Best to follow the masters and go to www.git-scm.com/downloads and install GIT, its FREE \n"
+            if sys.platform =='darwin':
+                git_location = raw_input('If you already installed GIT: \n Can you tell us the directory of GIT (HINT: it will be in a folder called "bin" e.g. sth like usr/local/git/bin/git ) \n To skip setting up GIT press q:\n')
+                git_location = stripcolon(git_location)
+                if  git_location=='q':
+                    for j in mains:
+                        doFileCreator(repository, name, git_location, j)
+                        if j=="analysis":
+                            sys.exit("All folders created, but GIT not set up")
+                print git_location
+                git_location_templist = git_location.split("/")
+                if git_location_templist[len(git_location_templist)-1]!="git":
+                    git_location = git_location + "/git"
+                print git_location
+                for j in mains:
+                    GitFound=GitSetUp(git_location, repository, files, name, j)
+            if sys.platform =='win32':
+                git_location = raw_input("If you already installed GIT: Can you tell us the directory of GIT (pls enter the full directory of git.exe e.g. C:\ appdata\ local\ programs\ git\ bin\ git ) \n or enter q to skip setting up GIT?:\n")
+                git_location = stripcolon(git_location)
+                if  git_location=='q':
+                    for j in mains:
+                        doFileCreator(repository, name, git_location, j)
+                        if j=="analysis":
+                            sys.exit("All folders created, but GIT not set up")
+                git_location = git_location + "\git.exe"
+                print git_location
+                for j in mains:
+                    GitFound=GitSetUp(git_location, repository, files, name, j)
+    if GitFound!=False:
+        print "Git found"
 
 
 
-        
-                
-                        
+
+
+
+
+
