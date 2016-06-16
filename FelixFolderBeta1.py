@@ -337,109 +337,103 @@ if os.path.exists(directory):
 
         repository  = "%(dir)s/%(folder)s/code" %{"dir": directory ,"folder":j}
         print repository
-        if os.path.exists(repository):
+        os.chdir(repository)
+
+        if GitFound!=False:
+            git_location=GitFound
+            GitFound=GitSetUp(git_location, repository, files, name, directory)
+            continue
+
+        if GitFound==False and sys.platform =='darwin':
+            #try to search the standard install directory on a MAC
+            GitFound=GitSetUp("/usr/local/git/bin/git", repository, files, name, j)
+            git_location="/usr/local/git/bin/git"
+
+
+        if GitFound==False and sys.platform =='darwin':
+            print "running mac OS"
+            try:
+                git_location=which("git")
+                print git_location
+            except IOError:
+                print 'cannot find git'
             os.chdir(repository)
+            if type(git_location)==str:
+                GitFound=GitSetUp(git_location, repository, files, name, j)
+            elif type(git_location)==list:
+                for i in git_location:
+                    if '/bin/git' in i:
+                        git_location=i
+                        GitFound=GitSetUp(git_location, repository, files, name, j)
+                    else:
+                        print ""
+            else:
+                print "We just can't fing GIT anywhere..."
+                print "Variable type that was returned by our search"
+                print type(git_location)
 
-            if GitFound!=False:
-                git_location=GitFound
-                GitFound=GitSetUp(git_location, repository, files, name, directory)
-                continue
-
-            if GitFound==False and sys.platform =='darwin':
-                #try to search the standard install directory on a MAC
-                GitFound=GitSetUp("/usr/local/git/bin/git", repository, files, name, j)
-                git_location="/usr/local/git/bin/git"
-
-
-            if GitFound==False and sys.platform =='darwin':
-                print "running mac OS"
-                try:
-                    git_location=which("git")
-                    print git_location
-                except IOError:
-                    print 'cannot find git'
+        if GitFound==False and sys.platform =='win32':
+            print "running Windows"
+            try:
+                git_location=subprocess.check_output("where git.exe", stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                print e.output
+                print git_location
+                pass
+            if type(git_location)==str and git_location!="False":
+                git_location_templist = git_location.split("Git")
+                git_location = git_location_templist[0]+r'\bin\git.exe'
+                print git_location
                 os.chdir(repository)
-                if type(git_location)==str:
-                    GitFound=GitSetUp(git_location, repository, files, name, j)
-                elif type(git_location)==list:
-                    for i in git_location:
-                        if '/bin/git' in i:
-                            git_location=i
-                            GitFound=GitSetUp(git_location, repository, files, name, j)
-                        else:
-                            print ""
-                else:
-                    print "We just can't fing GIT anywhere..."
-                    print "Variable type that was returned by our search"
-                    print type(git_location)
-
-            if GitFound==False and sys.platform =='win32':
-                print "running Windows"
-                try:
-                    git_location=subprocess.check_output("where git.exe", stderr=subprocess.STDOUT)
-                except subprocess.CalledProcessError as e:
-                    print e.output
-                    print git_location
-                    pass
-                if type(git_location)==str and git_location!="False":
-                    git_location_templist = git_location.split("Git")
-                    git_location = git_location_templist[0]+r'\bin\git.exe'
-                    print git_location
-                    os.chdir(repository)
-                    GitFound=GitSetUp(git_location, repository, files, name, j)
-                if type(git_location)==list and git_location!="False":
-                    for i in git_location:
-                        try:
-                            git_location_templist = git_location.split("Git")
-                            git_location = git_location_templist[0]+r'\bin\git.exe'
-                            print git_location
-                            os.chdir(repository)
-                            GitFound=GitSetUp(git_location, repository, files, name, j)
-                        except:
-                            print i
-                if type(git_location)!=list and type(git_location)!=str and git_location!=False:
-                    print "What kind of weird file structure is that? I found this directory:"
-                    print git_location
-
-
-            if GitFound==False:
-                git_location="False"
-                while os.path.isfile(git_location)==False:
-                    print "\n We couldn't find GIT on your computer. \n\n If you haven't installed GIT:\n Read ch.3 of Gentzkow & Shapiro on version controll. Git will help you keep track of changes you made in your do files: It also allows you to go back to earlier versions of your work\n Best to follow the masters and go to www.git-scm.com/downloads and install GIT, its FREE \n"
-                    if sys.platform =='darwin':
-                        git_location = raw_input('If you already installed GIT: \n Can you tell us the directory of GIT (HINT: it will be in a folder called "bin" e.g. sth like usr/local/git/bin/git ) \n To skip setting up GIT press q:\n')
-                        git_location = stripcolon(git_location)
-                        if  git_location=='q':
-                            doFileCreator(repository, name, git_location, j)
-
-                            if j=="analysis":
-                                sys.exit("All folders created, but GIT not set up")
-                            continue
+                GitFound=GitSetUp(git_location, repository, files, name, j)
+            if type(git_location)==list and git_location!="False":
+                for i in git_location:
+                    try:
+                        git_location_templist = git_location.split("Git")
+                        git_location = git_location_templist[0]+r'\bin\git.exe'
                         print git_location
-                        git_location_templist = git_location.split("/")
-                        if git_location_templist[len(git_location_templist)-1]!="git":
-                            git_location = git_location + "/git"
-                        print git_location
+                        os.chdir(repository)
                         GitFound=GitSetUp(git_location, repository, files, name, j)
-                    if sys.platform =='win32':
-                        git_location = raw_input(r"If you already installed GIT: Can you tell us the directory of GIT (pls enter the full directory of git.exe e.g. C:\appdata\local\programs\git\bin\git ) \n or enter q to skip setting up GIT?:\n")
-                        git_location = stripcolon(git_location)
-                        if  git_location=='q':
-                            for m in files:
-                                doFileCreator(repository, name, git_location, j)
-                            if j=="analysis":
-                                sys.exit("All folders created, but GIT not set up")
-                            continue
+                    except:
+                        print i
+            if type(git_location)!=list and type(git_location)!=str and git_location!=False:
+                print "What kind of weird file structure is that? I found this directory:"
+                print git_location
 
-                        git_location = git_location + "\git.exe"
-                        print git_location
 
-                        GitFound=GitSetUp(git_location, repository, files, name, j)
-            if GitFound!=False:
-                print "Git found"
-        else:
-            print "OS path doesn't seem to exist"
-
+    if GitFound==False:
+        git_location="False"
+        while os.path.isfile(git_location)==False:
+            print "\n We couldn't find GIT on your computer. \n\n If you haven't installed GIT:\n Read ch.3 of Gentzkow & Shapiro on version controll. Git will help you keep track of changes you made in your do files: It also allows you to go back to earlier versions of your work\n Best to follow the masters and go to www.git-scm.com/downloads and install GIT, its FREE \n"
+            if sys.platform =='darwin':
+                git_location = raw_input('If you already installed GIT: \n Can you tell us the directory of GIT (HINT: it will be in a folder called "bin" e.g. sth like usr/local/git/bin/git ) \n To skip setting up GIT press q:\n')
+                git_location = stripcolon(git_location)
+                if  git_location=='q':
+                    for j in mains:
+                        doFileCreator(repository, name, git_location, j)
+                        if j=="analysis":
+                            sys.exit("All folders created, but GIT not set up")
+                print git_location
+                git_location_templist = git_location.split("/")
+                if git_location_templist[len(git_location_templist)-1]!="git":
+                    git_location = git_location + "/git"
+                print git_location
+                for j in mains:
+                    GitFound=GitSetUp(git_location, repository, files, name, j)
+            if sys.platform =='win32':
+                git_location = raw_input("If you already installed GIT: Can you tell us the directory of GIT (pls enter the full directory of git.exe e.g. C:\ appdata\ local\ programs\ git\ bin\ git ) \n or enter q to skip setting up GIT?:\n")
+                git_location = stripcolon(git_location)
+                if  git_location=='q':
+                    for j in mains:
+                        doFileCreator(repository, name, git_location, j)
+                        if j=="analysis":
+                            sys.exit("All folders created, but GIT not set up")
+                git_location = git_location + "\git.exe"
+                print git_location
+                for j in mains:
+                    GitFound=GitSetUp(git_location, repository, files, name, j)
+    if GitFound!=False:
+        print "Git found"
 
 
 
